@@ -6,6 +6,13 @@ WIDTH, HEIGHT = 330, 175
 window = pg.display.set_mode((WIDTH, HEIGHT))
 pg.display.set_caption('Bubble Sort Visualization')
 
+def button_setup():
+    rect = []
+    rect.append([pg.Rect(15, 100, 90, 50), 'Run'])
+    rect.append([pg.Rect(115, 100, 90, 50), 'Random'])
+    rect.append([pg.Rect(215, 100, 90, 50), 'Step'])
+    return rect
+
 def create(size):
     arr = []
     for i in range(size):
@@ -37,11 +44,20 @@ def draw(window, arr, left, right):
     if right < len(arr):
         draw_cursor(window, arr, font, left, right)
 
-def draw_button(window, rect):
+def draw_button(window, rect, run):
     font = pg.font.SysFont('Arial', 20)
-    pg.draw.rect(window, (0, 0, 0), rect, 3)
-    ts = font.render('Restart', True, (0, 0, 0))
-    window.blit(ts, (rect.x+15, rect.y+15))
+    
+    for r in rect:
+        pg.draw.rect(window, (0, 0, 0), r[0], 3)
+        if run and r[1] == 'Step':
+            ts = font.render('Stop', True, (0, 0, 0))
+            window.blit(ts, (r[0].x+15, r[0].y+15))
+        else:
+            ts = font.render(r[1], True, (0, 0, 0))
+            window.blit(ts, (r[0].x+15, r[0].y+15))
+
+def swap(arr, left, right):
+    return arr[right], arr[left], True
 
 def main(window):
     running = True
@@ -50,39 +66,54 @@ def main(window):
     SIZE = 10
     arr = create(SIZE)
     isSwap, left, right = False, 0, 1
-    rect = pg.Rect(115, 100, 100, 50)
+    rect = button_setup()
+    run = False
 
     while running:
         clock.tick(fps)
         x, y = pg.mouse.get_pos()
 
         draw(window, arr, left, right)
-        draw_button(window, rect)
+        draw_button(window, rect, run)
 
-        if frame >= fps:
-            if right < SIZE:
-                if sort(arr, left, right):
-                    temp = arr[left]
-                    arr[left] = arr[right]
-                    arr[right] = temp
-                    isSwap = True
-                left += 1
-                right += 1
-            elif isSwap:
-                left, right = 0, 1
-                isSwap = False
-            frame = 0
-        else:
-            frame += 2
+        if run:
+            if frame >= fps:
+                if right < SIZE:
+                    if sort(arr, left, right):
+                        arr[left], arr[right], isSwap = swap(arr, left, right)
+                    left += 1
+                    right += 1
+                elif isSwap:
+                    left, right = 0, 1
+                    isSwap = False
+                frame = 0
+            else:
+                frame += 2
 
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
                 break
             if event.type == pg.MOUSEBUTTONDOWN:
-                if rect.collidepoint(x, y):
+                if rect[0][0].collidepoint(x, y):
+                    run = True
+                    frame = 0
+                if rect[1][0].collidepoint(x, y):
                     arr = create(SIZE)
                     isSwap, left, right = False, 0, 1
+                    run = False
+                if rect[2][0].collidepoint(x, y):
+                    if run:
+                        run = False
+                    else:
+                        if right < SIZE:
+                            if sort(arr, left, right):
+                                arr[left], arr[right], isSwap = swap(arr, left, right)
+                            left += 1
+                            right += 1
+                        elif isSwap:
+                            left, right = 0, 1
+                            isSwap = False
 
         pg.display.update()
     pg.quit()
